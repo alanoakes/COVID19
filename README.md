@@ -10,7 +10,7 @@ This repo hosts aggregated official COVID-19 data to host a personal dashboard f
 |----|:-----------------------------------------|:-----------------------------------------------------------|
 | 01 | R Code                                   | Script to PerformDaily Automated ETL Procedures            |
 | 02 | RShiny Code                              | Dashboard hosted through Rstudio                           |
-| 03 | Rmd Code                                 | Daily COVID19-Report through gmail                         |
+| 03 | Rmd Code                                 | Daily COVID-19 Report distributed through gmail            |
 | 04 | <b> FOLDER: Delta Files <b>              | ETL Write Files                                            |
 | 05 | Delta files: COVID_COUNTY.csv            | ETL Output with daily COVID-19 data per US County          |
 | 06 | Delta files: COVID_WORLD.csv             | ETL Output with daily COVID-19 data per Country            |
