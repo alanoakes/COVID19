@@ -1,0 +1,81 @@
+---
+title: "COVID-19 - Worldometer"
+author: "Parker Oakes"
+date: "4/21/2020"
+output: html_document
+---
+
+I became very interested in COVID-19 data when my friends, co-workers and family started to express fear based on data provided by the media (which they are rescinding every day due to inaccuracy). I decided to automate Worldometer data from the backend to simply the data for 'non-data analysts'. 
+
+I then thought, how many people in my community that use R everyday and are busy building their own scripts to not have time to build a web scraping tool to this public data. So here is your public web-scraping tool to automate worldometers data and aggregate as you like:
+
+First, we will need to load in our R libraries.
+
+```{r}
+library(rvest)
+library(stringr)
+library(readr)
+library(magrittr)
+```
+
+Next, I used the 'read_html' function to grab the worldometers countries' page.
+
+```{r}
+URL_WORLD              <- read_html("https://www.worldometers.info/coronavirus/#countries", options = )
+```
+
+After researching the worldometer url, I found the most consistent html node pathway was found in "//tr". In spite of other people who have extracted data from their site, I was only able to bring this to pass through my xpath call, which I could not find previously attempted. 
+
+The srings come with a carriage return "\n" operator whic I used to split the strings. The column names were pulled from the first string of the first list. I combined everything together with a nested 'reduce' and 'rbind' function call.
+
+```{r, results=F, message=F}
+COVID_WORLD            <- URL_WORLD %>% html_nodes(xpath = "//tr", ) %>% html_text()
+COVID_WORLD            <- str_split(COVID_WORLD, "\n")
+WORLD_NAMES            <- COVID_WORLD[[1]][1:12]
+COVID_WORLD            <- data.frame(Reduce(rbind, COVID_WORLD))
+```
+
+The next phase is creating a dynamic reference to formatting the table based on data changing within the worldometers site and the total rows that will skew any analysis results. My goal was to exact-match the countries' url format.
+
+```{r}
+WORLD_Sub_A            <- grep("All",COVID_WORLD$X13)               # locate countries rows to keep
+WORLD_Sub_B            <- grep("Total:", COVID_WORLD$X1)            # locate total rows to remove
+WORLD_Sub_1            <- WORLD_Sub_A[1] + 1                        # first position
+WORLD_Sub_2            <- WORLD_Sub_B[1] - 1                        # last position
+COVID_WORLD            <- COVID_WORLD[ WORLD_Sub_1 : WORLD_Sub_2, 1:12]
+```
+
+This phase creating 
+
+```{r}
+colnames(COVID_WORLD)       <- WORLD_NAMES
+COVID_WORLD$TotalCases      <- gsub(" ", "", COVID_WORLD$TotalCases)
+COVID_WORLD$TotalCases      <- gsub(",", "", COVID_WORLD$TotalCases)
+```
+
+
+
+```{r}
+colnames(COVID_WORLD)  <- c("Country","TotalCases","NewCases","TotalDeaths","NewDeaths","TotalRecovered",
+                            "ActiveCases", "SeriousCritical","Tot Cases/1M pop","Deaths/1M pop",
+                            "TotalTests","Tests/1M pop")
+COVID_WORLD$TotalCases      <- as.numeric(COVID_WORLD$TotalCases)
+COVID_WORLD                 <- COVID_WORLD[ order(COVID_WORLD$TotalCases,decreasing = T),]
+head(COVID_WORLD)
+```
+
+Here is a quick analysis from the data to show extracting works and I did not copy and paste any together so you can use this as a tool.
+
+```{r}
+InterQtRange <- quantile(x = COVID_WORLD$TotalCases, 0.75) - quantile(x = COVID_WORLD$TotalCases, 0.25)
+LowerBound <- quantile(x = COVID_WORLD$TotalCases, 0.25) - 1.5 * InterQtRange
+UpperBound <- quantile(x = COVID_WORLD$TotalCases, 0.75) + 1.5 * InterQtRange
+COVID_WORLD_Bar <- COVID_WORLD[COVID_WORLD$TotalCases >=  UpperBound, ]
+list(
+"Distribution of Total Cases for All Countries"=summary(COVID_WORLD$TotalCases),
+"Counties with Total Cases Above Upper Bound"=paste(length(COVID_WORLD_Bar$TotalCases)," countries out of ", length(COVID_WORLD$TotalCases), " countries are considered outliers"),
+"Country Outliers"= sort(as.character(COVID_WORLD_Bar$Country))
+)
+```
+
+
